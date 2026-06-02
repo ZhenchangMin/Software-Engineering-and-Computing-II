@@ -18,7 +18,7 @@
 
 ### HTTP 工作流程与无状态特性
 
-C/S 模型：客户端发 Request → 服务端处理 → 返回 Response。一次完整事务：① 地址解析(DNS) → ② 封装请求包 → ③ 建立 TCP 连接(三次握手) → ④ 发送请求 → ⑤ 服务器响应 → ⑥ 关闭连接（或 Keep-Alive 保持）。
+C/S 模型：客户端发 Request → 服务端处理 → 返回 Response。
 
 > **无状态特性**：默认每次请求建新连接、响应后关闭，服务器不保留连接信息；`Connection: Keep-Alive` 可使连接持续有效，节省建连开销。
 
@@ -53,20 +53,16 @@ http:// blog.example.com :8080 /users ?gender=male&page=1
 
 ## 基础二：Tomcat 与 Servlet
 
-**Apache Tomcat**：用 Java 编写、运行在 JVM 上的 Web 服务器（Servlet 容器）。核心职责：管理 Servlet 生命周期、URL 路由映射、请求/响应封装（`HttpServletRequest` / `HttpServletResponse`）。
+**Apache Tomcat**：用 Java 编写、运行在 JVM 上的 Web 服务器（Servlet 容器）。
+![1780400003766](image/00-05JavaWeb后端开发/1780400003766.png)
+核心职责：管理 Servlet 生命周期、URL 路由映射、请求/响应封装（`HttpServletRequest` / `HttpServletResponse`）。
 
 > Spring Boot 已**内嵌 Tomcat**——`java -jar` 启动时 Tomcat 随之启动，无需手动部署。
 
-**Servlet 生命周期**：
+Servlet是用 Java 编写的服务器端程序，作为浏览器请求与后端数据库/应用之间的中间层
 
-```
-HTTP 请求到达 → 容器加载 Servlet 类
-  → init()    ← 初始化（只执行一次）
-  → service() ← 每次请求触发（多线程并发）
-       ├ doGet()  ┐ 根据 HTTP 方法分发
-       └ doPost() ┘
-  → destroy() ← 容器关闭时执行
-```
+**Servlet 生命周期**：
+![1780400118026](image/00-05JavaWeb后端开发/1780400118026.png)
 
 > Spring Boot 的 `@RestController` 本质上就是对 Servlet 的高度封装——无需手写 Servlet 样板代码。
 
@@ -85,6 +81,8 @@ HTTP 请求到达 → 容器加载 Servlet 类
 | 删除商品 | `DELETE /api/products/123` |
 | 分页查询评论 | `GET /api/products/123/reviews?page=2&size=10` |
 
+REST 不是强制标准，但遵守规范让 API 一目了然—— URL即是文档
+
 **JSON**：REST API 标准数据格式，MIME 类型 `application/json`，与语言无关。数据类型：string · number · object`{}` · array`[]` · true/false · null。
 
 ## PART 1：Spring Boot
@@ -97,12 +95,6 @@ HTTP 请求到达 → 容器加载 Servlet 类
 | 自动配置 | 检测 classpath，自动装配 DataSource、MVC 等 |
 | Starter 依赖 | `spring-boot-starter-web` 一行引入 Web 全套 |
 | 内嵌服务器 | 打包为 fat JAR，`java -jar` 直接运行，自带 Tomcat |
-
-> 类比：传统 Spring 像散装零件自己组装，Spring Boot 像开箱即用的 MacBook——通电就能用。
-
-**项目创建**：Spring Initializr（start.spring.io）→ Maven + Java 17+ + Spring Boot 3.x，勾选 Spring Web / MyBatis / MySQL Driver / Spring Security。
-
-**项目结构**：`controller/`（接收请求）→ `service/`（业务逻辑）→ `mapper/`（数据层）→ `entity/`（实体类）。
 
 ### Hello World
 
@@ -176,8 +168,6 @@ HTTP 请求 → Controller(@RestController, 接收请求/参数校验)
 
 **MyBatis vs Hibernate/JPA**：MyBatis 完全手写 SQL、灵活、国内大厂主流、擅长多表联查；Hibernate/JPA 自动生成 SQL、学习曲线陡、易出现 N+1 查询，国际项目/DDD 场景常见。
 
-> 思考题：Equifax 攻击者攻破 Web 层后为何能查 1.47 亿条？若数据库账号遵循**最小权限原则**，后果将大不相同。
-
 ## PART 3：Spring Security
 
 ### 认证 vs 授权
@@ -197,10 +187,6 @@ HTTP 请求 → UsernamePasswordAuthenticationFilter(表单登录)
           → Controller(通过全部过滤器才能到达)
 ```
 
-> 核心设计：**安全是横切关注点**——不侵入业务代码，全部在过滤器链中处理。
-
-**配置要点（REST API + JWT 场景）**：关闭 CSRF、Session 设为 `STATELESS`、`/api/auth/**` 放行、`/api/admin/**` 需 ADMIN 角色、其余均需认证。
-
 ### JWT 认证流程
 
 ```
@@ -213,21 +199,6 @@ HTTP 请求 → UsernamePasswordAuthenticationFilter(表单登录)
 
 **JWT 结构**（三段 Base64 用 `.` 分隔）：Header（签名算法 HS256）+ Payload（用户信息）+ Signature（密钥 HMAC 签名，防篡改）。
 
-> ⚠ JWT Payload 只是 **Base64 编码而非加密**，任何人都能解码——**绝不要把密码存入 Payload！**
-
 ### 密码存储黄金法则
 
 > 永远使用 `BCryptPasswordEncoder`，**绝不存储明文密码**。注册时 BCrypt 加密再入库，登录时框架自动比对哈希值。`UserDetailsService.loadUserByUsername()` 负责连接 Security 与数据库（通过 MyBatis Mapper 查用户）。
-
-## 课堂总结：三层技术栈 = 三道防线
-
-```
-Browser / Postman / 移动 App
-  ▼ 第一道：守门员  → Spring Security 过滤器链(JWT 验证·认证鉴权)
-  ▼ 第二道：业务处理 → Spring Boot Controller + Service(RESTful·业务·校验)
-  ▼ 第三道：数据守护 → MyBatis Mapper + MySQL(参数化查询·防注入·最小权限)
-```
-
-> 回到 Equifax：若当年使用 Spring Security（及时升级框架）+ MyBatis 参数化查询 + 最小权限数据库账号，1.47 亿条数据不会如此轻易被窃。
-
-**三分钟回顾**：Spring Boot 核心 = 自动配置 + Starter + 内嵌 Tomcat；`@RestController` 默认带 `@ResponseBody`；`#{id}` 安全、`${id}` 危险；JWT = Header + Payload + Signature；密码用 BCrypt；Security 核心 = 过滤器链（安全与业务解耦）。

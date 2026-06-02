@@ -9,15 +9,6 @@
 
 核心思想：不再逐行手写代码，而是**用自然语言描述意图，让 AI 完成实现**。
 
-| 传统开发 | VibeCoding |
-|------|------|
-| 需要精通语言语法 | 只需清晰描述需求 |
-| 手动搭建项目结构 | AI 自动生成脚手架 |
-| 前后端分别学习 | 统一用对话驱动 |
-| 耗时数天搭原型 | 数小时跑通全栈 |
-
-**工具链分工**：界面原型（Google Stitch）→ Web 前端（Google AI Studio）→ Web 后端（Claude Code）→ 移动端 App（通义灵码 + Expo）→ 真机调试（Expo Go）→ Web 自动调试（MCP chrome-devtools）。
-
 ## PART 1：用 Stitch 设计界面原型
 
 **Google Stitch**（stitch.withgoogle.com）：AI 驱动界面原型工具。输入自然语言描述，自动生成 App/Web 界面原型，支持双端预览，可导出组件代码（HTML/React），与 Material Design 整合。
@@ -67,33 +58,7 @@ cd my-app-backend && claude
 
 **接入 AI 能力**：新增 `POST /api/ai/suggest`，从环境变量 `GEMINI_API_KEY` 读取密钥，调用 Gemini 返回任务分解步骤。
 
-## PART 4：通义灵码开发移动端 App
-
-**通义灵码**（VS Code 插件 / Lingma IDE）：与 AI Studio + Claude Code 并行的另一条路线，适合已在用阿里云生态（DashScope API / 通义系列）的团队，全程在 VS Code 内完成。
-
-| 技术栈 | 特点 | 适合场景 |
-|------|------|------|
-| Expo (React Native) | JS/TS，热重载，Expo Go 预览 | 快速原型，跨平台 |
-| Flutter | Dart，高性能，UI 统一 | UI 精度要求高 |
-| 原生 Swift/Kotlin | 最佳性能，学习成本高 | 生产级 App |
-
-> 推荐：**Expo (React Native) + 通义灵码**——上手最快，与 Web 前端知识复用度最高。
-
-**流程**：`npx create-expo-app@latest`（命名 demo-app-frontend）→ 灵码对话生成界面（灵码会**先自动读取项目结构**再生成代码）→ 生成后端（demo-app-backend, Node.js + Express）→ 用 RTK Query 做前后端通信 → 接入通义大模型（qwen-plus，`DASHSCOPE_API_KEY` 配在 .env，通过 OpenAI 兼容接口调用）。
-
-### Expo Go 真机调试
-
-安装 Expo Go App → `npm start` 输出二维码 → 手机扫码实时预览。**热重载**：改代码保存 → Expo Go 自动刷新，无需重新编译。
-
-| 调试场景 | 操作 |
-|------|------|
-| 界面布局错误 | Shake 手机 → Inspector 查看样式 |
-| 网络请求失败 | Expo Dev Tools → Network 面板 |
-| JS 报错 | 红屏报错 → 直接截图复制给灵码修复 |
-
-> ⚠ **真机调试时后端地址不能用 localhost**，需改为电脑的局域网 IP（如 `192.168.1.x:3000`）。常见错误："Network request failed" → localhost 在真机不可用；路径别名 `@` 未配置 → 修复 tsconfig.json 的 paths。
-
-## PART 5：MCP — chrome-devtools 自动调试 Web 端
+## PART 4：MCP — chrome-devtools 自动调试 Web 端
 
 **MCP（Model Context Protocol）**：AI 与工具之间的标准通信协议，由 Anthropic 提出，已成事实标准。允许 AI（Claude Code / 灵码）直接调用外部工具，每个 MCP Server 赋予 AI 一种新能力。
 
@@ -116,7 +81,7 @@ cd my-app-backend && claude
 > 实战示例：登录后页面空白 → Console 发现 `Cannot read properties of undefined (reading 'map')` at TaskList.jsx:42 → Network 发现 `GET /api/tasks` 返回 `{ "data": null }` → 自动修复 `const tasks = data?.tasks ?? [];` 加空值保护。
 > **MCP 的价值：AI 从"盲人摸象"变为"亲眼观察"，调试效率提升 5–10x。**
 
-## PART 6：前后端集成与运行
+## PART 5：前后端集成与运行
 
 **前端用 Axios 对接**：统一封装 axios 实例（baseURL、timeout、错误/loading 处理）。
 
@@ -140,18 +105,3 @@ cd my-app-backend && claude
 - 需求分析、系统设计、架构决策——仍是人的责任。
 - 安全性、性能、可维护性——AI 生成的代码需人工审查。
 - 测试与部署——自动化可辅助，但不能省略。
-
-> ⚠ 警惕：AI 生成的代码可能包含安全漏洞（SQL 注入、未校验输入）。**上线前必须做安全审查！**
-
-## 六讲总结：AI4Coding + VibeCoding 完整图景
-
-```
-00-01 AI 辅助编程入门    → 工具生态·六大能力·提示词四要素
-00-02 开发工具链与 Git   → DevOps·Git 四区域·Vercel 部署
-00-03 AI 编程进阶与 Agent → 项目级技巧·代码质量·SE 未来
-00-04 前端开发基础       → Web 演进·Vue.js·Node.js
-00-05 Java Web 开发      → Spring Boot·MyBatis·Spring Security
-00-06 项目级 VibeCoding  → Stitch·AI Studio·灵码·Claude Code·Expo Go·MCP
-```
-
-> **核心洞察：AI 工具改变的是速度和交互方式，不变的是需求分析、架构设计与工程纪律。**
